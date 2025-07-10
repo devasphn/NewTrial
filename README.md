@@ -1,77 +1,68 @@
-Real-Time Speech-to-Speech AI Agent
-This project provides a complete, self-contained AI agent that interacts in real-time through voice. It listens for spoken input, processes it, and generates a spoken response.
+# Real-Time Speech-to-Speech AI Agent (Web UI Version)
+
+This project provides a complete, self-contained AI agent that interacts in real-time through voice via a web interface. It listens for spoken input from your browser's microphone, processes it, and generates a spoken response that plays back automatically.
 
 The architecture is designed for high performance on a GPU-enabled machine (like Runpod with an NVIDIA A4500) and uses a state-of-the-art model pipeline for a fluid conversational experience.
 
-Core Technology Pipeline
-Speech-to-Text (STT): faster-whisper (distil-large-v3 model) for fast and accurate transcription.
+## Core Technology Pipeline
+*   **Web UI:** Gradio for a fast, interactive web interface.
+*   **Speech-to-Text (STT):** `faster-whisper` (distil-large-v3 model) for fast and accurate transcription.
+*   **Language Model (LLM):** Meta's `Llama-3-8B-Instruct` (in 4-bit) for intelligent and quick response generation.
+*   **Text-to-Speech (TTS):** `XTTS-v2` for high-quality, streaming voice synthesis.
 
-Language Model (LLM): Meta's Llama-3-8B-Instruct (in 4-bit) for intelligent and quick response generation.
+## Prerequisites
+*   **Hardware:** A machine with a modern NVIDIA GPU with at least 16GB of VRAM (e.g., A4500, A6000, RTX 3090, RTX 4090).
+*   **Operating System:** Linux (recommended for Runpod).
+*   **Software:**
+    *   Python 3.10+
+    *   `git` and `git-lfs` (for downloading the LLM).
 
-Text-to-Speech (TTS): XTTS-v2 for high-quality, streaming voice synthesis.
+## Setup and Installation
 
-Prerequisites
-Hardware: A machine with a modern NVIDIA GPU with at least 16GB of VRAM (e.g., A4500, A6000, RTX 3090, RTX 4090).
+1.  **Clone the Repository**
+    ```bash
+    # Replace with your repository URL
+    git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+    cd YOUR_REPO_NAME
+    ```
 
-Operating System: Linux (recommended for Runpod).
+2.  **Create a Virtual Environment**
+    ```bash
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
 
-Software:
+3.  **Install Dependencies**
+    Install all required Python libraries. This step is critical.
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-Python 3.10+
+4.  **Log in to Hugging Face (Required for Llama 3)**
+    The Llama 3 model is gated. You need a Hugging Face account and must accept the license on the model card page. Then, generate an access token with 'read' permissions and log in via the terminal:
+    ```bash
+    huggingface-cli login
+    # Paste your token when prompted
+    ```
 
-git and git-lfs (for downloading the LLM).
+## Running the Agent
 
-portaudio library for microphone access. On Debian/Ubuntu-based systems (like the standard Runpod environment), install it with:
+1.  **Start the Web Server**
+    Once setup is complete, run the application with:
+    ```bash
+    python app.py
+    ```
+    The first time you run it, it will download all necessary models (approx. 20-25 GB). This can take a while. Subsequent runs will be much faster.
 
-sudo apt-get update
-sudo apt-get install portaudio19-dev
+2.  **Access the UI**
+    The script will start a web server. On Runpod, a button will appear to "Connect to Port 7860". Click it, or copy the public URL from your pod's logs into your browser. It will look something like `https://<your-pod-id>.proxy.runpod.net`.
 
-Setup and Installation
-Follow these steps precisely to ensure a smooth setup.
+3.  **Interact with the Agent**
+    *   The UI will display a chat window and a microphone button.
+    *   Click the "Tap to Talk" microphone button and speak. It will automatically detect when you finish speaking.
+    *   Your transcribed text will appear in the chat, followed by the agent's response.
+    *   The agent's spoken audio will play automatically in your browser.
+    *   Click "Clear Conversation" to start over.
 
-1. Clone the Repository
-
-First, create a new repository in your GitHub account. Then, clone it to your local machine or Runpod instance.
-
-# Replace with your repository URL
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-cd YOUR_REPO_NAME
-
-2. Create a Virtual Environment
-
-It is crucial to use a virtual environment to isolate dependencies and prevent conflicts.
-
-python3 -m venv venv
-source venv/bin/activate
-
-Your terminal prompt should now be prefixed with (venv).
-
-3. Install Dependencies
-
-Install all the required Python libraries using the provided requirements.txt file. This file has pinned versions for maximum stability.
-
-pip install -r requirements.txt
-
-4. Log in to Hugging Face (Required for Llama 3)
-
-The Llama 3 model is gated. You need to have a Hugging Face account and accept the license terms on the model card page.
-
-Then, generate an access token with 'read' permissions from your Hugging Face account settings and log in via the terminal:
-
-huggingface-cli login
-# Paste your token when prompted
-
-Running the Agent
-Once the setup is complete, you can run the agent with a single command:
-
-python main.py
-
-The first time you run the script, it will download all the necessary models. This may take a significant amount of time and disk space (approx. 20-25 GB). Subsequent runs will be much faster as the models will be cached.
-
-The agent will first initialize all models, and you will see progress bars in your terminal.
-
-Once you see the "--- Agent is Ready ---" message, you can start speaking.
-
-The agent detects the end of your speech (a moment of silence) and then begins processing.
-
-To stop the agent, press Ctrl+C in the terminal.
+4.  **Stopping the Agent**
+    To stop the server, press `Ctrl+C` in the terminal.
