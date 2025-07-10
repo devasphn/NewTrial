@@ -217,4 +217,4 @@ if __name__ == "__main__":
     ui = build_ui(s2s_agent)
     
     # Launch on 0.0.0.0 to make it accessible on the network (e.g., Runpod)
-    ui.launch(server_name="0.0.0.0", server_port=7860)
+    ui.launch(server_name="0.0.0.0", server_port=8888)
