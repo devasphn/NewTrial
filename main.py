@@ -53,7 +53,6 @@ class RealTimeS2SAgent:
         self.tts_model = TTS(TTS_MODEL).to(self.device)
         print("TTS model loaded.")
         
-        # Clean up any previous output file
         if os.path.exists(OUTPUT_WAV_FILE):
             os.remove(OUTPUT_WAV_FILE)
             
@@ -100,11 +99,11 @@ class RealTimeS2SAgent:
     def convert_text_to_speech(self, text: str) -> str:
         """Converts text to speech and saves it to a file."""
         print("Speaking...")
-        # FIX: The 'TTS' object for XTTS-v2 does not have a .speakers attribute.
-        # We remove the 'speaker' argument to use the default high-quality voice
-        # and explicitly provide the language code.
+        # FINAL FIX: The XTTS-v2 model requires a speaker to be specified by name.
+        # We provide a known, high-quality default speaker name.
         self.tts_model.tts_to_file(
             text=text,
+            speaker="Claribel Dervla",
             language="en", 
             file_path=OUTPUT_WAV_FILE
         )
