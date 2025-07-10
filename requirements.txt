@@ -16,5 +16,5 @@ TTS==0.22.0
 
 # Audio I/O and Utilities
 pyaudio==0.2.14
-numpy==1.26.4
+numpy==1.22.0
 webrtcvad==2.0.10
