@@ -60,38 +60,25 @@ class RealTimeS2SAgent:
         print("\n--- Agent is Ready ---")
 
     def transcribe_audio(self, audio_filepath: str) -> str:
-        """
-        Transcribes the given audio file to text.
-        
-        Args:
-            audio_filepath: Path to the audio file.
-            
-        Returns:
-            The transcribed text.
-        """
+        """Transcribes audio to text."""
         if not audio_filepath:
             return ""
-            
         print("Transcribing audio...")
         segments, _ = self.stt_model.transcribe(audio_filepath, beam_size=5)
         transcription = " ".join([segment.text for segment in segments])
         print(f"User: {transcription}")
         return transcription
 
-    def generate_response(self, text: str) -> str:
-        """
-        Generates a response from the LLM.
-
-        Args:
-            text: The input text from the user.
-
-        Returns:
-            The generated text response.
-        """
+    def generate_response(self, chat_history: list) -> str:
+        """Generates a response from the LLM based on chat history."""
+        # We need to format the history for the Llama-3-Instruct model
         messages = [
-            {"role": "system", "content": "You are a friendly and helpful conversational AI. Your name is Deva. Keep your responses concise and to the point."},
-            {"role": "user", "content": text},
+            {"role": "system", "content": "You are a friendly and helpful conversational AI. Your name is Deva. Keep your responses concise and to the point."}
         ]
+        # Add the history, keeping only user and assistant roles
+        for msg in chat_history:
+            if msg['role'] in ['user', 'assistant']:
+                messages.append(msg)
         
         terminators = [
             self.llm_pipeline.tokenizer.eos_token_id,
@@ -113,15 +100,7 @@ class RealTimeS2SAgent:
         return assistant_response
 
     def convert_text_to_speech(self, text: str) -> str:
-        """
-        Converts text to speech and saves it to a file.
-        
-        Args:
-            text: The text to be converted to speech.
-            
-        Returns:
-            The path to the saved audio file.
-        """
+        """Converts text to speech and saves it to a file."""
         print("Speaking...")
         self.tts_model.tts_to_file(
             text=text, 
@@ -131,33 +110,23 @@ class RealTimeS2SAgent:
         )
         return OUTPUT_WAV_FILE
 
-    def process_conversation(self, audio_filepath: str, chat_history: list):
-        """
-        The main processing pipeline for a single conversational turn.
-        
-        Args:
-            audio_filepath: The path to the user's recorded audio.
-            chat_history: The current state of the conversation.
-            
-        Returns:
-            A tuple containing the updated chat history and the path to the agent's audio response.
-        """
+    def process_conversation_turn(self, audio_filepath: str, chat_history: list):
+        """Processes a single conversational turn."""
         if audio_filepath is None:
             return chat_history, None
 
-        # 1. Transcribe User Audio
+        # Transcribe User Audio
         user_text = self.transcribe_audio(audio_filepath)
         if not user_text.strip():
-            # If transcription is empty, do nothing
-            return chat_history, None
+            return chat_history, None # Do nothing if transcription is empty
             
-        chat_history.append(("You", user_text))
+        chat_history.append({"role": "user", "content": user_text})
 
-        # 2. Generate LLM Response
-        llm_response = self.generate_response(user_text)
-        chat_history.append(("Agent", llm_response))
+        # Generate LLM Response
+        llm_response = self.generate_response(chat_history)
+        chat_history.append({"role": "assistant", "content": llm_response})
         
-        # 3. Convert Response to Speech
+        # Convert Response to Speech
         agent_audio_path = self.convert_text_to_speech(llm_response)
 
         return chat_history, agent_audio_path
@@ -165,56 +134,41 @@ class RealTimeS2SAgent:
 
 # --- Gradio Web UI ---
 def build_ui(agent: RealTimeS2SAgent):
-    """
-    Builds the Gradio web interface for the agent.
-    """
+    """Builds the Gradio web interface for the agent."""
     with gr.Blocks(theme=gr.themes.Soft(), title="Real-Time S2S Agent") as demo:
         gr.Markdown("# Real-Time Speech-to-Speech AI Agent")
         gr.Markdown("Tap the microphone, speak, and the agent will respond. The agent's audio will play automatically.")
 
-        with gr.Row():
-            # Chatbot component to display the conversation
-            chatbot = gr.Chatbot(label="Conversation", elem_id="chatbot", height=500)
+        # FIX: Changed `type` to 'messages' to use the modern format and fix the warning.
+        chatbot = gr.Chatbot(label="Conversation", elem_id="chatbot", height=500, type="messages")
         
         with gr.Row():
-            # Audio input component (microphone)
             mic_input = gr.Audio(sources=["microphone"], type="filepath", label="Tap to Talk")
-            
-            # Audio output component for the agent's response
+            # This component is now only used to *play* the audio, not display it.
+            # Making it invisible is fine, but we can also leave it visible if upgrading gradio works.
             audio_output = gr.Audio(label="Agent Response", autoplay=True, visible=False)
 
-        # Function to handle the interaction when the user provides audio
         def handle_interaction(audio_filepath, history):
-            # This is a generator function to allow for streaming-like updates
-            # First, update the chat with the user's (yet to be transcribed) message placeholder
-            history.append(("You", "*(...speaking...)*"))
-            yield history, None # Update chatbot, no audio yet
-            
-            # Process the conversation
-            updated_history, agent_audio_path = agent.process_conversation(audio_filepath, history[:-1]) # Pass history without the placeholder
-            
-            # Final update with all results
-            yield updated_history, agent_audio_path
+            # FIX: The history is now a list of dictionaries.
+            history = history or []
+            updated_history, agent_audio_path = agent.process_conversation_turn(audio_filepath, history)
+            return updated_history, agent_audio_path
 
-        # Connect the microphone input to the handler function
         mic_input.stop_recording(
             fn=handle_interaction,
             inputs=[mic_input, chatbot],
             outputs=[chatbot, audio_output]
         )
         
-        # Add a button to clear the conversation
         clear_button = gr.Button("Clear Conversation")
         clear_button.click(lambda: ([], None), None, [chatbot, audio_output])
 
     return demo
 
 if __name__ == "__main__":
-    # Instantiate the agent
     s2s_agent = RealTimeS2SAgent()
-    
-    # Build and launch the Gradio UI
     ui = build_ui(s2s_agent)
     
-    # Launch on 0.0.0.0 to make it accessible on the network (e.g., Runpod)
+    # Remember to change the port if your Runpod exposes a different one (e.g., 8888)
+    # Using server_port=7860 as an example.
     ui.launch(server_name="0.0.0.0", server_port=7860)
