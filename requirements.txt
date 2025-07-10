@@ -17,7 +17,7 @@ speechbrain==1.0.0
 librosa==0.10.2
 
 # Web UI
-gradio==4.31.5
+gradio
 
 # Utilities
 numpy
