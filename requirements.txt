@@ -15,7 +15,7 @@ huggingface_hub==0.23.0
 TTS==0.22.0
 
 # Web UI (Upgraded to fix startup bug)
-gradio==4.44.1
+gradio==4.31.0
 # Audio I/O and Utilities
 pyaudio==0.2.14
 numpy==1.22.0
