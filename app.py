@@ -159,4 +159,4 @@ if __name__ == "__main__":
     ui = build_ui(s2s_agent)
     
     # Remember to change the port if your Runpod exposes a different one (e.g., 8888)
-    ui.launch(server_name="0.0.0.0", server_port=7860)
+    ui.launch(server_name="0.0.0.0", server_port=7860,share=True)
