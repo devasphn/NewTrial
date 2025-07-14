@@ -70,12 +70,15 @@ class RealTimeS2SAgent:
 
     def generate_response(self, chat_history: list) -> str:
         """Generates a response from the LLM based on chat history."""
-        messages = [
+        # This part handles the old tuple format from the chatbot
+        formatted_messages = [
             {"role": "system", "content": "You are a friendly and helpful conversational AI. Your name is Deva. Keep your responses concise and to the point."}
         ]
-        for msg in chat_history:
-            if msg['role'] in ['user', 'assistant']:
-                messages.append(msg)
+        for user_msg, ai_msg in chat_history:
+            if user_msg:
+                formatted_messages.append({"role": "user", "content": user_msg})
+            if ai_msg:
+                formatted_messages.append({"role": "assistant", "content": ai_msg})
         
         terminators = [
             self.llm_pipeline.tokenizer.eos_token_id,
@@ -83,7 +86,7 @@ class RealTimeS2SAgent:
         ]
 
         outputs = self.llm_pipeline(
-            messages,
+            formatted_messages,
             max_new_tokens=256,
             eos_token_id=terminators,
             do_sample=True,
@@ -109,17 +112,22 @@ class RealTimeS2SAgent:
 
     def process_conversation_turn(self, audio_filepath: str, chat_history: list):
         """Processes a single conversational turn."""
+        chat_history = chat_history or []
         if audio_filepath is None:
             return chat_history, None
 
         user_text = self.transcribe_audio(audio_filepath)
         if not user_text.strip():
             return chat_history, None
-            
-        chat_history.append({"role": "user", "content": user_text})
-
+        
+        # We add the user message to the history
+        chat_history.append((user_text, None))
+        
+        # We need to generate the response based on the history up to this point
         llm_response = self.generate_response(chat_history)
-        chat_history.append({"role": "assistant", "content": llm_response})
+
+        # Now we update the last entry in the history with the assistant's response
+        chat_history[-1] = (user_text, llm_response)
         
         agent_audio_path = self.convert_text_to_speech(llm_response)
 
@@ -131,20 +139,17 @@ def build_ui(agent: RealTimeS2SAgent):
         gr.Markdown("# Real-Time Speech-to-Speech AI Agent")
         gr.Markdown("Tap the microphone, speak, and the agent will respond. The agent's audio will play automatically.")
 
-        chatbot = gr.Chatbot(label="Conversation", elem_id="chatbot", height=500, type="messages")
+        # FINAL FIX: Removed the 'type="messages"' argument, which is not supported in gradio==4.31.0.
+        # This will revert to the default tuple format and fix the crash.
+        chatbot = gr.Chatbot(label="Conversation", elem_id="chatbot", height=500)
         
         with gr.Row():
             mic_input = gr.Audio(sources=["microphone"], type="filepath", label="Tap to Talk")
-            # The audio player must be visible for browser autoplay policies to work reliably.
             audio_output = gr.Audio(label="Agent Response", autoplay=True, visible=True)
 
-        def handle_interaction(audio_filepath, history):
-            history = history or []
-            updated_history, agent_audio_path = agent.process_conversation_turn(audio_filepath, history)
-            return updated_history, agent_audio_path
-
+        # The handle_interaction function needs to be a bit different for the tuple format
         mic_input.stop_recording(
-            fn=handle_interaction,
+            fn=agent.process_conversation_turn,
             inputs=[mic_input, chatbot],
             outputs=[chatbot, audio_output]
         )
