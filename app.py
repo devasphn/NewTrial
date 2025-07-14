@@ -139,15 +139,14 @@ def build_ui(agent: RealTimeS2SAgent):
         gr.Markdown("# Real-Time Speech-to-Speech AI Agent")
         gr.Markdown("Tap the microphone, speak, and the agent will respond. The agent's audio will play automatically.")
 
-        # FINAL FIX: Removed the 'type="messages"' argument, which is not supported in gradio==4.31.0.
-        # This will revert to the default tuple format and fix the crash.
+        # This uses the default tuple format compatible with gradio==4.31.0
         chatbot = gr.Chatbot(label="Conversation", elem_id="chatbot", height=500)
         
         with gr.Row():
             mic_input = gr.Audio(sources=["microphone"], type="filepath", label="Tap to Talk")
             audio_output = gr.Audio(label="Agent Response", autoplay=True, visible=True)
 
-        # The handle_interaction function needs to be a bit different for the tuple format
+        # The function from the agent class handles the tuple format correctly.
         mic_input.stop_recording(
             fn=agent.process_conversation_turn,
             inputs=[mic_input, chatbot],
