@@ -14,8 +14,8 @@ huggingface_hub==0.23.0
 # Text-to-Speech (TTS)
 TTS==0.22.0
 
-# Web UI
-gradio==4.44.1
+# Web UI (Upgraded to fix startup bug)
+gradio==4.31.0
 
 # Audio I/O and Utilities
 pyaudio==0.2.14
