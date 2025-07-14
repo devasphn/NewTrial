@@ -135,7 +135,7 @@ def build_ui(agent: RealTimeS2SAgent):
         
         with gr.Row():
             mic_input = gr.Audio(sources=["microphone"], type="filepath", label="Tap to Talk")
-            # FINAL FIX: The audio player must be visible for browser autoplay policies to work reliably.
+            # The audio player must be visible for browser autoplay policies to work reliably.
             audio_output = gr.Audio(label="Agent Response", autoplay=True, visible=True)
 
         def handle_interaction(audio_filepath, history):
@@ -158,5 +158,5 @@ if __name__ == "__main__":
     s2s_agent = RealTimeS2SAgent()
     ui = build_ui(s2s_agent)
     
-    # Remember to change the port if your Runpod exposes a different one (e.g., 8888)
-    ui.launch(server_name="0.0.0.0", server_port=7860)
+    # Setting share=True is recommended for cloud environments like Runpod
+    ui.launch(server_name="0.0.0.0", server_port=7860, share=True)
