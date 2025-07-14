@@ -70,15 +70,12 @@ class RealTimeS2SAgent:
 
     def generate_response(self, chat_history: list) -> str:
         """Generates a response from the LLM based on chat history."""
-        # This part handles the old tuple format from the chatbot
-        formatted_messages = [
+        messages = [
             {"role": "system", "content": "You are a friendly and helpful conversational AI. Your name is Deva. Keep your responses concise and to the point."}
         ]
-        for user_msg, ai_msg in chat_history:
-            if user_msg:
-                formatted_messages.append({"role": "user", "content": user_msg})
-            if ai_msg:
-                formatted_messages.append({"role": "assistant", "content": ai_msg})
+        for msg in chat_history:
+            if msg['role'] in ['user', 'assistant']:
+                messages.append(msg)
         
         terminators = [
             self.llm_pipeline.tokenizer.eos_token_id,
@@ -86,7 +83,7 @@ class RealTimeS2SAgent:
         ]
 
         outputs = self.llm_pipeline(
-            formatted_messages,
+            messages,
             max_new_tokens=256,
             eos_token_id=terminators,
             do_sample=True,
@@ -112,22 +109,17 @@ class RealTimeS2SAgent:
 
     def process_conversation_turn(self, audio_filepath: str, chat_history: list):
         """Processes a single conversational turn."""
-        chat_history = chat_history or []
         if audio_filepath is None:
             return chat_history, None
 
         user_text = self.transcribe_audio(audio_filepath)
         if not user_text.strip():
             return chat_history, None
-        
-        # We add the user message to the history
-        chat_history.append((user_text, None))
-        
-        # We need to generate the response based on the history up to this point
-        llm_response = self.generate_response(chat_history)
+            
+        chat_history.append({"role": "user", "content": user_text})
 
-        # Now we update the last entry in the history with the assistant's response
-        chat_history[-1] = (user_text, llm_response)
+        llm_response = self.generate_response(chat_history)
+        chat_history.append({"role": "assistant", "content": llm_response})
         
         agent_audio_path = self.convert_text_to_speech(llm_response)
 
@@ -139,16 +131,20 @@ def build_ui(agent: RealTimeS2SAgent):
         gr.Markdown("# Real-Time Speech-to-Speech AI Agent")
         gr.Markdown("Tap the microphone, speak, and the agent will respond. The agent's audio will play automatically.")
 
-        # This uses the default tuple format compatible with gradio==4.31.0
-        chatbot = gr.Chatbot(label="Conversation", elem_id="chatbot", height=500)
+        chatbot = gr.Chatbot(label="Conversation", elem_id="chatbot", height=500, type="messages")
         
         with gr.Row():
             mic_input = gr.Audio(sources=["microphone"], type="filepath", label="Tap to Talk")
+            # FINAL FIX: The audio player must be visible for browser autoplay policies to work reliably.
             audio_output = gr.Audio(label="Agent Response", autoplay=True, visible=True)
 
-        # The function from the agent class handles the tuple format correctly.
+        def handle_interaction(audio_filepath, history):
+            history = history or []
+            updated_history, agent_audio_path = agent.process_conversation_turn(audio_filepath, history)
+            return updated_history, agent_audio_path
+
         mic_input.stop_recording(
-            fn=agent.process_conversation_turn,
+            fn=handle_interaction,
             inputs=[mic_input, chatbot],
             outputs=[chatbot, audio_output]
         )
@@ -162,5 +158,5 @@ if __name__ == "__main__":
     s2s_agent = RealTimeS2SAgent()
     ui = build_ui(s2s_agent)
     
-    # Setting share=True is recommended for cloud environments like Runpod
-    ui.launch(server_name="0.0.0.0", server_port=7860, share=True)
+    # Remember to change the port if your Runpod exposes a different one (e.g., 8888)
+    ui.launch(server_name="0.0.0.0", server_port=7860)
