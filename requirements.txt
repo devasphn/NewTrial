@@ -15,10 +15,9 @@ huggingface_hub==0.23.0
 TTS==0.22.0
 
 # Web UI
-gradio==5.36.2
+gradio==4.29.0
 
 # Audio I/O and Utilities
 pyaudio==0.2.14
 numpy==1.22.0
 webrtcvad==2.0.10
-librosa==0.10.1
