@@ -154,7 +154,7 @@ def build_ui(agent: RealTimeS2SAgent):
 
     return demo
 
-if _name_ == "_main_":
+if __name__ == "_main_":
     s2s_agent = RealTimeS2SAgent()
     ui = build_ui(s2s_agent)
     
