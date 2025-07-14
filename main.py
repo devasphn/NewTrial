@@ -20,7 +20,7 @@ class RealTimeS2SAgent:
     A real-time Speech-to-Speech agent that uses Gradio for its UI.
     It transcribes user audio, generates a response with an LLM, and speaks it back.
     """
-    def __init__(self):
+    def _init_(self):
         """
         Initializes all the models and necessary components.
         """
@@ -154,7 +154,7 @@ def build_ui(agent: RealTimeS2SAgent):
 
     return demo
 
-if __name__ == "__main__":
+if _name_ == "_main_":
     s2s_agent = RealTimeS2SAgent()
     ui = build_ui(s2s_agent)
     
