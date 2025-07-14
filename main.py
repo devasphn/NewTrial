@@ -99,6 +99,8 @@ class RealTimeS2SAgent:
     def convert_text_to_speech(self, text: str) -> str:
         """Converts text to speech and saves it to a file."""
         print("Speaking...")
+        # FINAL FIX: The XTTS-v2 model requires a speaker to be specified by name.
+        # We provide a known, high-quality default speaker name.
         self.tts_model.tts_to_file(
             text=text,
             speaker="Claribel Dervla",
@@ -135,8 +137,7 @@ def build_ui(agent: RealTimeS2SAgent):
         
         with gr.Row():
             mic_input = gr.Audio(sources=["microphone"], type="filepath", label="Tap to Talk")
-            # FINAL FIX: The audio player must be visible for browser autoplay policies to work reliably.
-            audio_output = gr.Audio(label="Agent Response", autoplay=True, visible=True)
+            audio_output = gr.Audio(label="Agent Response", autoplay=True, visible=False)
 
         def handle_interaction(audio_filepath, history):
             history = history or []
