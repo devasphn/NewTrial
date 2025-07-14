@@ -16,7 +16,6 @@ TTS==0.22.0
 
 # Web UI (Upgraded to fix startup bug)
 gradio==4.44.1
-librosa==0.10.1
 # Audio I/O and Utilities
 pyaudio==0.2.14
 numpy==1.22.0
